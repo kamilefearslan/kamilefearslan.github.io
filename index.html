@@ -53,7 +53,7 @@
   .hero{padding-top:clamp(2.5rem,7vw,5rem)}
   .name{
     margin:0;font-weight:400;
-    font-size:clamp(1.5rem,4.4vw,4.2rem);line-height:1.1;letter-spacing:.13em;text-transform:uppercase;white-space:nowrap;
+    font-size:clamp(1.5rem,3.6vw,2.9rem);line-height:1.1;letter-spacing:.13em;text-transform:uppercase;white-space:nowrap;
   }
   .name .line{display:block;overflow:hidden;padding-bottom:.04em}
   .name .line > span{display:inline-block;animation:rise 1s cubic-bezier(.2,.7,.1,1) both}
@@ -94,12 +94,12 @@
   .dim{display:block;width:0;min-width:calc(100% - .13em);height:20px;margin-top:.9rem;overflow:visible}
   .dim line{stroke:var(--green);stroke-width:1.2;vector-effect:non-scaling-stroke}
   .dim .minor{stroke:var(--green-dim)}
-  .dim-main{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.2s 5.1s cubic-bezier(.4,0,.2,1) forwards}
+  .dim-main{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.2s 4.4s cubic-bezier(.4,0,.2,1) forwards}
   .dim-tick{opacity:0;animation:tick .4s forwards}
-  .dim-tick:nth-of-type(2){animation-delay:5.05s}
-  .dim-tick:nth-of-type(3){animation-delay:6.25s}
-  .dim-tick:nth-of-type(4){animation-delay:5.45s}
-  .dim-tick:nth-of-type(5){animation-delay:5.85s}
+  .dim-tick:nth-of-type(2){animation-delay:4.35s}
+  .dim-tick:nth-of-type(3){animation-delay:5.55s}
+  .dim-tick:nth-of-type(4){animation-delay:4.75s}
+  .dim-tick:nth-of-type(5){animation-delay:5.15s}
   @keyframes draw{to{stroke-dashoffset:0}}
   @keyframes tick{to{opacity:1}}
   .hero{overflow-x:clip}
@@ -108,7 +108,7 @@
   .name .ch .base{visibility:hidden}
   .name .sl{position:absolute;left:0;top:0;color:#7f948a;clip-path:var(--clip);opacity:0;
     transform:translate3d(var(--x),var(--y),var(--z)) rotateX(var(--rx)) rotateY(var(--ry)) rotate(var(--r)) scale(var(--s));
-    animation:assemble 1.15s var(--d) cubic-bezier(.18,1.25,.32,1) forwards;transition:color .4s ease}
+    animation:assemble 1s var(--d) cubic-bezier(.18,1.25,.32,1) forwards;transition:color .4s ease}
   @keyframes assemble{20%{opacity:1}100%{opacity:1;transform:none}}
   .name .ch.locked .sl{color:var(--text)}
   .name .ch::after{content:"";position:absolute;left:-.04em;right:.1em;top:52%;height:2px;background:#45e3a4;
@@ -119,7 +119,7 @@
   @keyframes clunk{20%{transform:translateX(-4px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}}
   .name.weld{background:linear-gradient(100deg,var(--text) 42%,#45e3a4 48%,#ffffff 50%,#45e3a4 52%,var(--text) 58%);
     background-size:320% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent;
-    animation:sheen 1.6s .05s ease-in-out forwards,weldglow 1.6s ease-out forwards}
+    animation:sheen 1.4s .05s ease-in-out forwards,weldglow 1.4s ease-out forwards}
   @keyframes sheen{to{background-position:0 0}}
   @keyframes weldglow{0%{filter:none}15%{filter:drop-shadow(0 0 16px rgba(69,227,164,.9))}100%{filter:none}}
   .name{cursor:default}
@@ -729,8 +729,8 @@
         var end = 0;
         for(var k=0;k<pieces.length;k++){
           var sl = document.createElement('span'); sl.className='sl'; sl.textContent=c;
-          var d = .2 + idx*.17 + k*.12 + R(0,.08);
-          end = Math.max(end, d + 1.0);
+          var d = .2 + idx*.14 + k*.1 + R(0,.07);
+          end = Math.max(end, d + .88);
           var sx = (k%2===0?-1:1), sy = (k<2?-1:1);
           sl.style.cssText = '--clip:'+pieces[k]
             +';--x:'+(sx*R(1.2,3.6)).toFixed(2)+'em;--y:'+(sy*R(.8,2.4)).toFixed(2)+'em;--z:'+R(-260,160).toFixed(0)+'px'
