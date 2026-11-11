@@ -353,7 +353,7 @@
   .pv-notes:focus{outline:none;border-color:var(--green)}
   .pv-notes-hint{margin:-.6rem 0 1rem;color:var(--muted);font-size:.85rem}
   .pv-exit:hover{color:var(--text);border-color:var(--green)}
-  .footer-seal{-webkit-touch-callout:none;cursor:default;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  .footer-seal{-webkit-touch-callout:none;touch-action:manipulation;cursor:default;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
   @media (prefers-reduced-motion: reduce){.pv-door-seal .ring{animation:none}.pv-door{transition:none}.pv-room.on .pv-scan{animation:none}}
   @media (prefers-reduced-motion: reduce){
     html{scroll-behavior:auto}
@@ -1071,7 +1071,9 @@
     // Opens only with a rhythm: three quick taps, a short pause, two quick taps.
     // Rapid spamming never matches because it has no pause.
     var taps = [], busy = false;
-    seal.addEventListener('click', function(){
+    // pointerdown fires on every touch right away; click is held back by the phone's double-tap zoom
+    seal.addEventListener(window.PointerEvent ? 'pointerdown' : 'touchstart', function(e){
+      if(e.pointerType === 'mouse' && e.button !== 0) return;
       var now = performance.now();
       if(taps.length && now - taps[taps.length-1] > 2200) taps = [];
       taps.push(now); if(taps.length > 5) taps.shift();
