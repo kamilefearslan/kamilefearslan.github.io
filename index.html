@@ -318,7 +318,16 @@
   .pv-exit,.pv-music{font:inherit;color:var(--muted);background:rgba(0,0,0,.6);border:1px solid var(--rule);border-radius:999px;padding:.35rem .95rem;cursor:pointer}
   .pv-music{padding:.35rem .8rem}.pv-music[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
   .pv-music:hover{color:var(--text);border-color:var(--green)}
-  .pv-tools{align-items:center}
+  .pv-tools{align-items:center;flex-wrap:wrap;justify-content:flex-end}
+  .pv-mode{display:flex;border:1px solid var(--rule);border-radius:999px;overflow:hidden;background:rgba(0,0,0,.6)}
+  .pv-mode button{font:inherit;font-size:.95rem;color:var(--muted);background:none;border:0;padding:.35rem .85rem;cursor:pointer}
+  .pv-mode button[aria-pressed="true"]{color:#000;background:#c8a96a}
+  .pv-room.rock .pv-music,.pv-room.rock .pv-vol,.pv-room.rock .pv-now{display:none}
+  .pv-spot{position:fixed;right:1.4rem;bottom:1.2rem;z-index:3;width:min(340px,calc(100vw - 2.8rem));border-radius:12px;overflow:hidden;
+    box-shadow:0 0 0 1px rgba(200,169,106,.35),0 18px 40px rgba(0,0,0,.6);opacity:0;transform:translateY(12px);transition:opacity .8s ease,transform .8s ease}
+  .pv-spot[hidden]{display:none}
+  .pv-spot.on{opacity:1;transform:none}
+  .pv-spot iframe{display:block;width:100%;height:152px;border:0}
   .pv-vol{-webkit-appearance:none;appearance:none;width:96px;height:20px;background:transparent;cursor:pointer}
   .pv-vol::-webkit-slider-runnable-track{height:1px;background:linear-gradient(90deg,#c8a96a var(--v,45%),#1b3a2d var(--v,45%))}
   .pv-vol::-moz-range-track{height:1px;background:#1b3a2d}
@@ -655,8 +664,9 @@
 <div class="pv-room" id="pvRoom" hidden>
   <canvas class="pv-stars" id="pvStars" aria-hidden="true"></canvas>
   <div class="pv-scan" aria-hidden="true"></div>
-  <div class="pv-tools"><button type="button" class="pv-music" id="pvMusic" aria-pressed="true" aria-label="Müziği kapat">♪</button><input type="range" class="pv-vol" id="pvVol" min="0" max="100" step="1" value="45" aria-label="Müzik sesi"><button type="button" class="pv-exit" id="pvExit">Çıkış</button></div>
+  <div class="pv-tools"><div class="pv-mode" role="group" aria-label="Müzik türü"><button type="button" data-m="classic">Klasik</button><button type="button" data-m="rock">Rock</button></div><button type="button" class="pv-music" id="pvMusic" aria-pressed="true" aria-label="Müziği kapat">♪</button><input type="range" class="pv-vol" id="pvVol" min="0" max="100" step="1" value="45" aria-label="Müzik sesi"><button type="button" class="pv-exit" id="pvExit">Çıkış</button></div>
   <p class="pv-now" id="pvNow" aria-live="polite"></p>
+  <div class="pv-spot" id="pvSpot" hidden></div>
   <div class="pv-wrap">
     <p class="pv-hello" id="pvHello"></p>
     <div class="pv-name-block"><h2 class="pv-name" id="pvName" lang="tr"></h2>
@@ -1172,6 +1182,22 @@
       try{ a.master.gain.cancelScheduledValues(a.ctx.currentTime); a.master.gain.setTargetAtTime(0, a.ctx.currentTime, .3); }catch(e){}
       setTimeout(function(){ try{ a.ctx.close(); }catch(e){} }, 1500);
     }
+    var mode = 'rock', spotUrl = '';
+    try{ mode = localStorage.getItem('kea-mode') || 'rock'; }catch(e){}
+    var spot = document.getElementById('pvSpot'), modeBtns = [].slice.call(document.querySelectorAll('.pv-mode button'));
+    function paintMode(){ modeBtns.forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.m === mode)); }); room.classList.toggle('rock', mode === 'rock'); }
+    function showSpot(){
+      if(!spotUrl) return;
+      spot.innerHTML = '<iframe title="Spotify" src="'+spotUrl+'" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>';
+      spot.hidden = false; requestAnimationFrame(function(){ requestAnimationFrame(function(){ spot.classList.add('on'); }); });
+    }
+    function hideSpot(){ spot.classList.remove('on'); spot.hidden = true; spot.innerHTML = ''; }
+    function playMode(){
+      if(mode === 'rock'){ stopMusic(); showSpot(); }
+      else { hideSpot(); if(!audio){ try{ audio = makeAudio(); if(audio && audio.ctx.resume) audio.ctx.resume(); }catch(e){ audio = null; } } if(audio && !audio.timer) startMusic(audio); }
+    }
+    modeBtns.forEach(function(b){ b.addEventListener('click', function(){ if(mode === b.dataset.m) return; mode = b.dataset.m; try{ localStorage.setItem('kea-mode', mode); }catch(e){} paintMode(); playMode(); }); });
+    paintMode();
     var mBtn = document.getElementById('pvMusic'), vIn = document.getElementById('pvVol');
     function paintMusic(){ mBtn.setAttribute('aria-pressed', String(musicOn)); mBtn.setAttribute('aria-label', musicOn ? 'Müziği kapat' : 'Müziği aç');
       vIn.value = Math.round(vol*100); vIn.style.setProperty('--v', Math.round(vol*100)+'%'); }
@@ -1258,7 +1284,8 @@
         lock.classList.add('opening');
         startStars(); bindNotes();
         document.getElementById('pvDate').textContent = new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-        if(audio) startMusic(audio);
+        spotUrl = data.spotify || ''; paintMode();
+        if(mode === 'rock'){ stopMusic(); setTimeout(showSpot, reduce ? 0 : 2600); } else if(audio) startMusic(audio);
       }, T2);
       setTimeout(function(){ void room.offsetWidth; room.classList.add('on'); }, T2 + TD*0.55);
       setTimeout(function(){
@@ -1277,7 +1304,7 @@
       }, T2 + TD);
     }
     document.getElementById('pvExit').addEventListener('click', function(){
-      stopMusic(); stopStars();
+      stopMusic(); stopStars(); hideSpot();
       room.hidden = true; document.getElementById('pvBody').innerHTML=''; document.getElementById('pvName').innerHTML=''; document.body.style.overflow='';
     });
   })();
@@ -1413,6 +1440,6 @@
   
 })();
 </script>
-<script type="application/json" id="pvData">{"v": 1, "kdf": "PBKDF2-SHA256", "it": 310000, "s": "cPuI4C8D92XPMUWzMcK8Qw==", "i": "VZ/G/KZU0Sxv+u6i", "c": "ltyDWk94Nfm10GAJT7L0E0pAn0p9OM7Ii4OMhmpayqIRsjuekgAYCPxKxUFqlw+GTYnML1BCs77rGAaPrHx05Ixg1UWgiTcPU3JGimIVvaDDim4KzjH6dQRoZFU6iCf4vs8FUpIndomjxdom7g0YDWUk8UoxfAty62H/1MjxwEL/Aus4FggtU/oCSDAVp7YxA1wi8LYvX4jwyQxM7F6uHFU9Q3H62AuM+EGjNXPptUd3LD/s7FMv1bT1ikbFnvwU5+lc33YB7CStZ8zEB2nP8ShECAkjeKIet7Lo7E0UaAbfwW9k4/TPamftA4/q+lVy+LNAnd0j+6ngRQ4DJIQbYpDJXJcnljbsM5KeOqwLfbSoxMuTJyYOGJNsIRAFbLORrG5lp1ENSzS5knRnOQqpGMi0Eu3bO0XWlsKBJqpaVVRKMX+n+g0IiI2HllyjW/lOn4hYtQCU4etWTlLmXeUJW3AtcfxOSNQYEtSaL2FTegEsGAZg8hbCQDKOIKiEQVEMMymMVov9jBGyyCq521Diwr1Uju80Rg/aPdJlKISeR0SSnXE3le0CsYji1la4u1qe8q6yqqJc4iWuScTcdS60rO3r4xf/Svjf7pFrl3UKWBAScaI0Rs4MmuZrDR4IcPfjeJU9YsC9dEI31jwj4dQ4Q5GvM5Vyy5Y0JEZNfMn2DfrMmhMYlQ31O7kNVxsHxzZr6dS+Y5rVjfhlVkOCZJbfLNTv1OsP5/s2pbbcQyWChAcBQjHyVfhNn3tpi9yP4roEnOqOaQGPhgoqB+BKignycS6F3qWwh2/q24EupH+UmTau6FxwiardPg0lFL0dZaXd9tCmoZpctEsyzlNUxwSSQYK1/HF1vQN71ImvERk6f7Hd2Qb0bpbaTd7Z1tQo8GHKVYemRgSdS4RRAKqXL44CrwmNSVPGqZlyxYN8ph15FuSqTRS1RsoMyg+h35IrHVL3lkmOxzWOxiXqDgzqdYSmJTUMYVppunPGB0fVER26B4e/FSkkNApQbKrkzwp8DgyPs1Vwtts3kKMH6UaepCj1qOJeQnRtPl+ufBqtTNTOYvzpl8VJK9yN3kQDRJntngjr0gU5dGPNr1IEMis3SuEidmtp1xWb+tDpnqfYjCasNYrqFjPb/BQnRmdorwWlh648W3i/zUjcJqd7GNvsdBjVHdCkXSYxYB/CinHuy9Q8QK7dJX7n8julETwnoRANSZQEA86p+Rdh0MILFi1J7JedI5xjFDnpjC45Y678Cyb6P5yH9QwJiqOuNN76PMZlsADUnmU5r6T7piHw9zXdApz6pBD1PLM/uFKx842v0YnqLM8thmd4tmkPOG0butHYK5PUmPqyTfvdC3Bp/C7UDaAorCOF6CvKgoe+1WuzH61B7JaPr3tTGaZJkE8+lXlRU4HozBld9DdZZ7KT3LV8QstuuRpUtq8ddgw5vWrnqonciyxlkxY66/EDS5akmLsFSB8sRI1fsFfl+2VTLitlMaGbR2+4Q2mbxbn3aOqSmIwDB+yymTSn1RucXL3F9YEwsbdiGRTH4+4PPxBaGtEY+sr9sV0e4vWbBf2OxNtRWAU8hns7tRGbt7i28AWmhhn6un9AGkHANmJC+TTmqWM8VAaYTMkY+oALrlzKcv73WQ+SnCDbo3alwDRg2LdQ5SyCR/bZeIu+CQXdZ1PjF351xgAND4Km31ygaILD4RwPR7PJ7i8xsfmM4IIbZsjJy76VDKzEjmhrV86RjuuyNp4D8AEV22HWA7lPM7Otvc3ui0edAMzFKsDwOoRpcpsw0QMTHxl39KJcRk1L26drU5gt4/nqJ6vlM55RxCupQUQ5UAsKCR75Yc2I8fPI23gD7QvK40zA0WiOdgsxxTlOGYbuG7L2uwDQKQXrfkbBWtg+/7JL8GFwepUgOlJ9u2F7Wjje+CJBCxj1Dus/9irOe3vnG4u3b8ZK"}</script>
+<script type="application/json" id="pvData">{"v": 1, "kdf": "PBKDF2-SHA256", "it": 310000, "s": "fphDTXbXCJS4wtbInfAsHg==", "i": "2M5Hhe5j3seYc2eg", "c": "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"}</script>
 </body>
 </html>
